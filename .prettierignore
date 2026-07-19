@@ -1,0 +1,34 @@
+# Dependencies
+node_modules
+
+# Build output
+.next
+out
+build
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Prisma generated client (regenerated via postinstall)
+src/generated
+
+# IDE / OS
+.DS_Store
+*.pem
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Vercel
+.vercel
+
+# Test coverage
+coverage

@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TaskType {
+  ASSIGNMENT
+  HOMEWORK
+  PROJECT
+  EXAM_PREPARATION
+  PRACTICAL
+  PRESENTATION
+  READING
+  PERSONAL_STUDY
+  OTHER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id              String   @id @default(uuid()) @db.Uuid
+  email           String   @unique @db.VarChar(255)
+  passwordHash    String   @map("password_hash") @db.VarChar(255)
+  name            String?  @db.VarChar(100)
+  profilePhotoUrl String?  @map("profile_photo_url")
+  course          String?  @db.VarChar(100)
+  college         String?  @db.VarChar(150)
+  semester        String?  @db.VarChar(50)
+  academicYear    String?  @map("academic_year") @db.VarChar(20)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  subjects Subject[]
+  tasks    Task[]
+
+  @@map("users")
+}
+
+model Subject {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String   @db.VarChar(100)
+  code        String?  @db.VarChar(30)
+  color       String   @default("#6366f1") @db.VarChar(7)
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("subjects")
+}
+
+model Task {
+  id                   String       @id @default(uuid()) @db.Uuid
+  userId               String       @map("user_id") @db.Uuid
+  subjectId            String       @map("subject_id") @db.Uuid
+  title                String       @db.VarChar(200)
+  description          String?
+  type                 TaskType     @default(OTHER)
+  priority             TaskPriority @default(MEDIUM)
+  status               TaskStatus   @default(NOT_STARTED)
+  dueDate              DateTime?    @map("due_date") @db.Timestamptz(6)
+  estimatedTimeMinutes Int?         @map("estimated_time_minutes")
+  notes                String?
+  completedAt          DateTime?    @map("completed_at") @db.Timestamptz(6)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  @@index([userId, dueDate])
+  @@index([userId, status])
+  @@index([userId, priority])
+  @@index([userId, subjectId])
+  @@index([userId, createdAt])
+  @@map("tasks")
+}
