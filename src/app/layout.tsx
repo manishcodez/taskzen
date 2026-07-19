@@ -23,8 +23,8 @@ export const metadata: Metadata = {
   title: "Taskzen — Academic workload, beautifully organized",
   description:
     "A premium academic productivity platform for students to organize subjects, tasks, deadlines, and progress.",
-  authors: [{ name: "Manish Kumar" }],
-  creator: "Manish Kumar",
+  authors: [{ name: "ManishCodez", url: "https://github.com/manishcodez" }],
+  creator: "ManishCodez",
 };
 
 export default function RootLayout({

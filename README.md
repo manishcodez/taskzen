@@ -183,7 +183,11 @@ npx prisma migrate status
 
 ## Developer
 
-Taskzen is designed and developed by Manish Kumar.
+**Made by ManishCodez**
+
+Software Developer · AI Enthusiast · Programmer · Product Builder
+
+[LinkedIn](https://www.linkedin.com/in/manishcodez) · [GitHub](https://github.com/manishcodez) · [Email](mailto:manishyadav4u32@gmail.com)
 
 ## License
 
