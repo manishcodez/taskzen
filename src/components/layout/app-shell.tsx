@@ -16,6 +16,7 @@ import {
 import { useState } from "react";
 
 import { TaskzenLogo } from "@/components/brand/taskzen-logo";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { markPostLogoutNavigation } from "@/components/auth/prepare-public-back-navigation";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -193,7 +194,10 @@ export function AppShell({ user, children }: AppShellProps) {
           </div>
         </header>
 
-        <main className="px-4 py-6 pb-[5.5rem] md:px-6 md:pb-8 lg:px-8">{children}</main>
+        <main className="px-4 py-6 pb-[5.5rem] md:px-6 md:pb-8 lg:px-8">
+          {children}
+          <SiteFooter className="-mx-4 mt-8 md:-mx-6 lg:-mx-8" />
+        </main>
       </div>
     </div>
   );

@@ -181,6 +181,10 @@ npx prisma migrate status
 - Email address cannot be changed in settings
 - Browser automation E2E tests are not included in CI; use `scripts/e2e-smoke-http.ts` and phase verification scripts locally
 
+## Developer
+
+Taskzen is designed and developed by Manish Kumar.
+
 ## License
 
 Private project — all rights reserved.
