@@ -46,6 +46,7 @@ export const PUBLIC_API_ROUTES = [
   "/api/auth/refresh",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
+  "/api/cron/task-notifications",
 ] as const;
 
 export type SafeUser = {
@@ -57,6 +58,8 @@ export type SafeUser = {
   college: string | null;
   semester: string | null;
   academicYear: string | null;
+  emailDeadlineReminders: boolean;
+  emailOverdueNotifications: boolean;
   createdAt: Date;
   updatedAt: Date;
   isAdmin: boolean;

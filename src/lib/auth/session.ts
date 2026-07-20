@@ -34,6 +34,8 @@ const userAuthSelect = {
   college: true,
   semester: true,
   academicYear: true,
+  emailDeadlineReminders: true,
+  emailOverdueNotifications: true,
   createdAt: true,
   updatedAt: true,
   tokenVersion: true,
@@ -48,6 +50,8 @@ export function toSafeUser(user: {
   college: string | null;
   semester: string | null;
   academicYear: string | null;
+  emailDeadlineReminders?: boolean;
+  emailOverdueNotifications?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }): SafeUser {
@@ -60,6 +64,8 @@ export function toSafeUser(user: {
     college: user.college,
     semester: user.semester,
     academicYear: user.academicYear,
+    emailDeadlineReminders: user.emailDeadlineReminders ?? true,
+    emailOverdueNotifications: user.emailOverdueNotifications ?? true,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   });

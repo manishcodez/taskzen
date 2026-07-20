@@ -72,6 +72,8 @@ export async function updateProfileRequest(input: {
   semester?: string;
   academicYear?: string;
   profilePhotoUrl?: string;
+  emailDeadlineReminders?: boolean;
+  emailOverdueNotifications?: boolean;
 }): Promise<SafeUser> {
   const response = await fetch("/api/profile", {
     method: "PATCH",

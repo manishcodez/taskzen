@@ -25,6 +25,12 @@ export async function PATCH(request: Request) {
       ...(data.college !== undefined ? { college: data.college } : {}),
       ...(data.semester !== undefined ? { semester: data.semester } : {}),
       ...(data.academicYear !== undefined ? { academicYear: data.academicYear } : {}),
+      ...(data.emailDeadlineReminders !== undefined
+        ? { emailDeadlineReminders: data.emailDeadlineReminders }
+        : {}),
+      ...(data.emailOverdueNotifications !== undefined
+        ? { emailOverdueNotifications: data.emailOverdueNotifications }
+        : {}),
     });
 
     return apiSuccess({ user: toSafeUser(updatedUser) });

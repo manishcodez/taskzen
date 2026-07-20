@@ -32,24 +32,32 @@ enum TaskStatus {
   COMPLETED
 }
 
-model User {
-  id              String   @id @default(uuid()) @db.Uuid
-  email           String   @unique @db.VarChar(255)
-  passwordHash    String   @map("password_hash") @db.VarChar(255)
-  /// Bumped on password change/reset to invalidate existing JWTs.
-  tokenVersion    Int      @default(0) @map("token_version")
-  name            String?  @db.VarChar(100)
-  profilePhotoUrl String?  @map("profile_photo_url")
-  course          String?  @db.VarChar(100)
-  college         String?  @db.VarChar(150)
-  semester        String?  @db.VarChar(50)
-  academicYear    String?  @map("academic_year") @db.VarChar(20)
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+enum EmailNotificationType {
+  DEADLINE_REMINDER
+  OVERDUE
+}
 
-  subjects            Subject[]
-  tasks               Task[]
-  passwordResetTokens PasswordResetToken[]
+model User {
+  id                         String   @id @default(uuid()) @db.Uuid
+  email                      String   @unique @db.VarChar(255)
+  passwordHash               String   @map("password_hash") @db.VarChar(255)
+  /// Bumped on password change/reset to invalidate existing JWTs.
+  tokenVersion               Int      @default(0) @map("token_version")
+  name                       String?  @db.VarChar(100)
+  profilePhotoUrl            String?  @map("profile_photo_url")
+  course                     String?  @db.VarChar(100)
+  college                    String?  @db.VarChar(150)
+  semester                   String?  @db.VarChar(50)
+  academicYear               String?  @map("academic_year") @db.VarChar(20)
+  emailDeadlineReminders     Boolean  @default(true) @map("email_deadline_reminders")
+  emailOverdueNotifications  Boolean  @default(true) @map("email_overdue_notifications")
+  createdAt                  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  subjects                 Subject[]
+  tasks                    Task[]
+  passwordResetTokens      PasswordResetToken[]
+  emailNotificationDeliveries EmailNotificationDelivery[]
 
   @@map("users")
 }
@@ -106,11 +114,31 @@ model Task {
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  emailNotificationDeliveries EmailNotificationDelivery[]
 
   @@index([userId, dueDate])
   @@index([userId, status])
   @@index([userId, priority])
   @@index([userId, subjectId])
   @@index([userId, createdAt])
+  @@index([dueDate, status])
   @@map("tasks")
+}
+
+model EmailNotificationDelivery {
+  id          String                @id @default(uuid()) @db.Uuid
+  userId      String                @map("user_id") @db.Uuid
+  taskId      String                @map("task_id") @db.Uuid
+  type        EmailNotificationType
+  /// ISO due-date fingerprint so a changed deadline can notify again.
+  dueDateKey  String                @map("due_date_key") @db.VarChar(40)
+  sentAt      DateTime              @default(now()) @map("sent_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, type, dueDateKey])
+  @@index([userId, type])
+  @@index([sentAt])
+  @@map("email_notification_deliveries")
 }

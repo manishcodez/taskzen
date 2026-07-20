@@ -54,6 +54,8 @@ export async function POST() {
         college: true,
         semester: true,
         academicYear: true,
+        emailDeadlineReminders: true,
+        emailOverdueNotifications: true,
         createdAt: true,
         updatedAt: true,
         tokenVersion: true,

@@ -32,6 +32,8 @@ export const updateProfileSchema = z.object({
     .max(20, "Academic year must be 20 characters or fewer")
     .optional()
     .or(z.literal("")),
+  emailDeadlineReminders: z.boolean().optional(),
+  emailOverdueNotifications: z.boolean().optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

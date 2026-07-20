@@ -214,6 +214,8 @@ export async function updateProfileForUser(
     semester?: string;
     academicYear?: string;
     profilePhotoUrl?: string;
+    emailDeadlineReminders?: boolean;
+    emailOverdueNotifications?: boolean;
   },
 ) {
   const user = await db.user.update({
@@ -229,6 +231,12 @@ export async function updateProfileForUser(
       ...(input.profilePhotoUrl !== undefined
         ? { profilePhotoUrl: input.profilePhotoUrl.trim() || null }
         : {}),
+      ...(input.emailDeadlineReminders !== undefined
+        ? { emailDeadlineReminders: input.emailDeadlineReminders }
+        : {}),
+      ...(input.emailOverdueNotifications !== undefined
+        ? { emailOverdueNotifications: input.emailOverdueNotifications }
+        : {}),
     },
     select: {
       id: true,
@@ -239,6 +247,8 @@ export async function updateProfileForUser(
       college: true,
       semester: true,
       academicYear: true,
+      emailDeadlineReminders: true,
+      emailOverdueNotifications: true,
       createdAt: true,
       updatedAt: true,
     },

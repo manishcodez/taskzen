@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { GraduationCap, ImagePlus, KeyRound, Mail, Pencil, Shield, User } from "lucide-react";
+import { GraduationCap, ImagePlus, KeyRound, Bell, Mail, Pencil, Shield, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -407,6 +407,73 @@ export function SettingsView() {
                     </Button>
                   </div>
                 )}
+              </div>
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="bg-panel overflow-hidden">
+              <div className="border-b border-border/60 bg-gradient-to-r from-primary/8 to-transparent px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-soft">
+                    <Bell className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="label-caps text-primary">Email notifications</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Choose which task deadline emails Taskzen can send you.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4 p-6">
+                <label className="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Deadline reminders</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      One email about 24 hours before an incomplete task is due.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 accent-primary"
+                    checked={data.emailDeadlineReminders}
+                    disabled={updateProfile.isPending}
+                    onChange={async (event) => {
+                      try {
+                        await updateProfile.mutateAsync({
+                          emailDeadlineReminders: event.target.checked,
+                        });
+                        setSuccessMessage("Notification preferences saved.");
+                      } catch {
+                        setFormError("Unable to update notification preferences.");
+                      }
+                    }}
+                  />
+                </label>
+
+                <label className="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Overdue alerts</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      One email when an incomplete task becomes overdue.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 accent-primary"
+                    checked={data.emailOverdueNotifications}
+                    disabled={updateProfile.isPending}
+                    onChange={async (event) => {
+                      try {
+                        await updateProfile.mutateAsync({
+                          emailOverdueNotifications: event.target.checked,
+                        });
+                        setSuccessMessage("Notification preferences saved.");
+                      } catch {
+                        setFormError("Unable to update notification preferences.");
+                      }
+                    }}
+                  />
+                </label>
               </div>
             </motion.div>
 

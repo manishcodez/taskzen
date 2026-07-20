@@ -35,6 +35,10 @@ export function useUpdateProfile() {
           college: input.college?.trim() || previous.college,
           semester: input.semester?.trim() || previous.semester,
           academicYear: input.academicYear?.trim() || previous.academicYear,
+          emailDeadlineReminders:
+            input.emailDeadlineReminders ?? previous.emailDeadlineReminders,
+          emailOverdueNotifications:
+            input.emailOverdueNotifications ?? previous.emailOverdueNotifications,
         });
       }
 
