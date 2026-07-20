@@ -1,7 +1,10 @@
-import { mkdir, unlink, writeFile } from "fs/promises";
+import { unlink, writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 export const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Soft cap for DB-backed data URLs (cropped uploads are typically far smaller). */
+export const PROFILE_PHOTO_DATA_URL_MAX_BYTES = 750 * 1024;
 
 export const PROFILE_PHOTO_ALLOWED_TYPES = [
   "image/jpeg",
@@ -25,6 +28,16 @@ export function isLocalProfilePhotoUrl(url: string | null | undefined) {
   return Boolean(url?.startsWith("/uploads/profile-photos/"));
 }
 
+export function isDataUrlProfilePhoto(url: string | null | undefined) {
+  return Boolean(url?.startsWith("data:image/"));
+}
+
+function shouldPersistProfilePhotoInDatabase() {
+  // Vercel (and similar serverless hosts) have ephemeral filesystems.
+  // Persist cropped photos as data URLs so they survive deploys/restarts.
+  return process.env.VERCEL === "1" || process.env.TASKZEN_PROFILE_PHOTO_DATA_URL === "1";
+}
+
 export function validateProfilePhotoFile(file: File) {
   if (!file || file.size === 0) {
     return "Choose an image file to upload.";
@@ -41,7 +54,27 @@ export function validateProfilePhotoFile(file: File) {
   return null;
 }
 
+async function saveProfilePhotoAsDataUrl(file: File) {
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (buffer.length > PROFILE_PHOTO_DATA_URL_MAX_BYTES) {
+    throw new Error("PROFILE_PHOTO_TOO_LARGE_FOR_STORAGE");
+  }
+
+  const mime = PROFILE_PHOTO_ALLOWED_TYPES.includes(
+    file.type as (typeof PROFILE_PHOTO_ALLOWED_TYPES)[number],
+  )
+    ? file.type
+    : "image/jpeg";
+
+  return `data:${mime};base64,${buffer.toString("base64")}`;
+}
+
 export async function saveProfilePhotoFile(file: File, userId: string) {
+  if (shouldPersistProfilePhotoInDatabase()) {
+    return saveProfilePhotoAsDataUrl(file);
+  }
+
   const uploadDir = getProfilePhotoUploadDir();
   await mkdir(uploadDir, { recursive: true });
 
@@ -57,7 +90,7 @@ export async function saveProfilePhotoFile(file: File, userId: string) {
 }
 
 export async function deleteLocalProfilePhoto(url: string | null | undefined) {
-  if (!isLocalProfilePhotoUrl(url)) {
+  if (isDataUrlProfilePhoto(url) || !isLocalProfilePhotoUrl(url)) {
     return;
   }
 

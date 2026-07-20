@@ -29,6 +29,7 @@ export const PUBLIC_API_ROUTES = [
   "/api/auth/register",
   "/api/auth/login",
   "/api/auth/logout",
+  "/api/auth/refresh",
 ] as const;
 
 export type SafeUser = {

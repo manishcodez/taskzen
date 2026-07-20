@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { authFieldClassName, PasswordInput } from "@/components/ui/password-input";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { loginRequest } from "@/lib/api-client";
+import { getSafeRedirectPath } from "@/lib/auth/safe-redirect";
 import { fadeUp, staggerContainer } from "@/lib/motion";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
 
@@ -40,7 +41,7 @@ export function LoginForm() {
 
     try {
       await loginRequest(values);
-      const redirectTo = searchParams.get("redirect") || "/dashboard";
+      const redirectTo = getSafeRedirectPath(searchParams.get("redirect"));
       router.push(redirectTo);
       router.refresh();
     } catch (error) {

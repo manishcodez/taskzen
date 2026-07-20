@@ -2,13 +2,21 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import {
+  ACCESS_TOKEN_MAX_AGE_SECONDS,
+  AUTH_COOKIE_ACCESS,
   AUTH_ROUTES,
   ADMIN_API_PREFIX,
   PROTECTED_ROUTE_PREFIXES,
   PUBLIC_API_ROUTES,
 } from "@/lib/auth/constants";
 import { isAdminEmail } from "@/lib/auth/admin-config";
-import { getAccessTokenFromRequest, verifyAccessTokenEdge } from "@/lib/auth/jwt-edge";
+import {
+  getAccessTokenFromRequest,
+  getRefreshTokenFromRequest,
+  signAccessTokenEdge,
+  verifyAccessTokenEdge,
+  verifyRefreshTokenEdge,
+} from "@/lib/auth/jwt-edge";
 
 function isAuthRoute(pathname: string): boolean {
   return AUTH_ROUTES.some((route) => pathname === route);
@@ -36,11 +44,41 @@ function isProtectedApiRoute(pathname: string): boolean {
   return pathname.startsWith("/api/") && !isPublicApiRoute(pathname);
 }
 
+const cookieBaseOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+  path: "/",
+};
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const accessToken = getAccessTokenFromRequest(request);
-  const session = accessToken ? await verifyAccessTokenEdge(accessToken) : null;
+  let session = accessToken ? await verifyAccessTokenEdge(accessToken) : null;
+  let refreshedAccessToken: string | null = null;
+
+  if (!session) {
+    const refreshToken = getRefreshTokenFromRequest(request);
+    const refreshSession = refreshToken ? await verifyRefreshTokenEdge(refreshToken) : null;
+
+    if (refreshSession) {
+      session = refreshSession;
+      refreshedAccessToken = await signAccessTokenEdge(refreshSession);
+    }
+  }
+
   const isAuthenticated = Boolean(session);
+
+  function withRefreshedAccess(response: NextResponse) {
+    if (refreshedAccessToken) {
+      response.cookies.set(AUTH_COOKIE_ACCESS, refreshedAccessToken, {
+        ...cookieBaseOptions,
+        maxAge: ACCESS_TOKEN_MAX_AGE_SECONDS,
+      });
+    }
+
+    return response;
+  }
 
   if (isProtectedRoute(pathname) && !isAuthenticated) {
     const loginUrl = new URL("/login", request.url);
@@ -51,7 +89,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAuthRoute(pathname) && isAuthenticated) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return withRefreshedAccess(NextResponse.redirect(new URL("/dashboard", request.url)));
   }
 
   if (isProtectedApiRoute(pathname) && !isAuthenticated) {
@@ -92,7 +130,7 @@ export async function middleware(request: NextRequest) {
         );
       }
 
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return withRefreshedAccess(NextResponse.redirect(new URL("/dashboard", request.url)));
     }
   }
 
@@ -102,7 +140,7 @@ export async function middleware(request: NextRequest) {
     response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
   }
 
-  return response;
+  return withRefreshedAccess(response);
 }
 
 export const config = {

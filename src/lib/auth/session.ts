@@ -10,7 +10,12 @@ import {
   type TokenPayload,
 } from "@/lib/auth/constants";
 import { withAdminFlag } from "@/lib/auth/admin";
-import { signAccessToken, signRefreshToken, verifyAccessToken } from "@/lib/auth/jwt";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+} from "@/lib/auth/jwt";
 import { db } from "@/lib/db";
 
 const cookieBaseOptions = {
@@ -107,12 +112,38 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(AUTH_COOKIE_ACCESS)?.value;
 
-  if (!accessToken) {
+  if (accessToken) {
+    try {
+      const payload = verifyAccessToken(accessToken);
+      const user = await db.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          profilePhotoUrl: true,
+          course: true,
+          college: true,
+          semester: true,
+          academicYear: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return user ? toSafeUser(user) : null;
+    } catch {
+      // Fall through to refresh-token recovery.
+    }
+  }
+
+  const refreshToken = cookieStore.get(AUTH_COOKIE_REFRESH)?.value;
+  if (!refreshToken) {
     return null;
   }
 
   try {
-    const payload = verifyAccessToken(accessToken);
+    const payload = verifyRefreshToken(refreshToken);
     const user = await db.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -129,7 +160,12 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
       },
     });
 
-    return user ? toSafeUser(user) : null;
+    if (!user || user.email.toLowerCase() !== payload.email.toLowerCase()) {
+      return null;
+    }
+
+    await setAuthCookiesOnStore({ sub: user.id, email: user.email });
+    return toSafeUser(user);
   } catch {
     return null;
   }

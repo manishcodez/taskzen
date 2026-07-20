@@ -29,7 +29,20 @@ export async function POST(request: Request) {
 
     await deleteLocalProfilePhoto(user.profilePhotoUrl);
 
-    const profilePhotoUrl = await saveProfilePhotoFile(photo, user.id);
+    let profilePhotoUrl: string;
+    try {
+      profilePhotoUrl = await saveProfilePhotoFile(photo, user.id);
+    } catch (error) {
+      if (error instanceof Error && error.message === "PROFILE_PHOTO_TOO_LARGE_FOR_STORAGE") {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Image is too large after processing. Try a smaller photo.",
+          400,
+          { photo: ["Image is too large after processing. Try a smaller photo."] },
+        );
+      }
+      throw error;
+    }
 
     const updatedUser = await updateProfileForUser(user.id, {
       profilePhotoUrl,

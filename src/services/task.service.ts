@@ -211,44 +211,89 @@ function buildTaskOrderBy(
 export async function listTasksForUser(userId: string, query: TaskListQuery) {
   const where = buildTaskWhere(userId, query);
   const skip = (query.page - 1) * query.limit;
+  const taskInclude = {
+    subject: {
+      select: {
+        id: true,
+        name: true,
+        color: true,
+        code: true,
+      },
+    },
+  } as const;
+
+  // Priority ranking is not alphabetical; paginate after ranking so page order is correct.
+  if (query.sortBy === "priority") {
+    const ranked = await db.task.findMany({
+      where,
+      select: {
+        id: true,
+        priority: true,
+        dueDate: true,
+      },
+    });
+
+    ranked.sort((a, b) => {
+      const diff = priorityOrder[b.priority] - priorityOrder[a.priority];
+      if (diff !== 0) {
+        return query.sortOrder === "asc" ? -diff : diff;
+      }
+
+      const aDue = a.dueDate ? a.dueDate.getTime() : Number.MAX_SAFE_INTEGER;
+      const bDue = b.dueDate ? b.dueDate.getTime() : Number.MAX_SAFE_INTEGER;
+      return aDue - bDue;
+    });
+
+    const total = ranked.length;
+    const pageIds = ranked.slice(skip, skip + query.limit).map((task) => task.id);
+
+    if (pageIds.length === 0) {
+      return {
+        items: [],
+        pagination: {
+          page: query.page,
+          limit: query.limit,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / query.limit)),
+        },
+      };
+    }
+
+    const tasks = await db.task.findMany({
+      where: { id: { in: pageIds } },
+      include: taskInclude,
+    });
+
+    const byId = new Map(tasks.map((task) => [task.id, task]));
+    const items = pageIds
+      .map((id) => byId.get(id))
+      .filter((task): task is NonNullable<typeof task> => Boolean(task))
+      .map(mapTask);
+
+    return {
+      items,
+      pagination: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / query.limit)),
+      },
+    };
+  }
 
   const [total, tasks] = await Promise.all([
     db.task.count({ where }),
     db.task.findMany({
       where,
-      include: {
-        subject: {
-          select: {
-            id: true,
-            name: true,
-            color: true,
-            code: true,
-          },
-        },
-      },
+      include: taskInclude,
       orderBy: buildTaskOrderBy(query),
       skip,
       take: query.limit,
     }),
   ]);
 
-  let items = tasks.map(mapTask);
-
-  if (query.sortBy === "priority") {
-    items = [...items].sort((a, b) => {
-      const diff = priorityOrder[b.priority] - priorityOrder[a.priority];
-      if (diff !== 0) {
-        return query.sortOrder === "asc" ? -diff : diff;
-      }
-
-      const aDue = a.dueDate ? new Date(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
-      const bDue = b.dueDate ? new Date(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
-      return aDue - bDue;
-    });
-  }
-
   return {
-    items,
+    items: tasks.map(mapTask),
     pagination: {
       page: query.page,
       limit: query.limit,
