@@ -14,6 +14,13 @@ const sizeMap = {
   lg: { mark: 44, word: "text-xl", gap: "gap-3" },
 } as const;
 
+/**
+ * Zenith Ribbon — Taskzen brand mark.
+ *
+ * Soft rounded badge + three ascending ribbon bands that climb into a
+ * terracotta focus node. Evokes calm momentum and structured clarity
+ * without a letterform, checkmark, clock, or folder motif.
+ */
 function LogoMark({
   size,
   variant,
@@ -38,36 +45,30 @@ function LogoMark({
         y="2"
         width="40"
         height="40"
-        rx="14"
+        rx="12"
         className={isInverse ? "fill-white/12" : "fill-primary/10"}
       />
+
+      {/* Lower ribbon */}
       <path
-        d="M12 28C16 24 20 22 24 22C28 22 31 23.5 34 26"
-        stroke={isInverse ? "white" : "currentColor"}
-        className={isInverse ? "" : "text-primary"}
-        strokeWidth="2.5"
-        strokeLinecap="round"
+        d="M10 31.2C10 29.57 11.32 28.25 12.95 28.25H22.1C23.05 28.25 23.93 27.79 24.48 27L28.85 20.7C29.4 19.91 30.28 19.45 31.23 19.45H32.55C34.18 19.45 35.5 20.77 35.5 22.4C35.5 24.03 34.18 25.35 32.55 25.35H31.7C30.75 25.35 29.87 25.81 29.32 26.6L24.95 32.9C24.4 33.69 23.52 34.15 22.57 34.15H12.95C11.32 34.15 10 32.83 10 31.2Z"
+        className={isInverse ? "fill-white" : "fill-primary"}
       />
+
+      {/* Middle ribbon */}
       <path
-        d="M12 21C15.5 18.5 19 17 23 17C27.5 17 30.5 18.5 33 21"
-        stroke={isInverse ? "white" : "currentColor"}
-        className={isInverse ? "opacity-80" : "text-brand-secondary"}
-        strokeWidth="2.5"
-        strokeLinecap="round"
+        d="M12.5 23.85C12.5 22.36 13.71 21.15 15.2 21.15H23.35C24.22 21.15 25.03 20.73 25.55 20.01L28.95 15.25C29.47 14.53 30.28 14.1 31.15 14.1H32.1C33.59 14.1 34.8 15.31 34.8 16.8C34.8 18.29 33.59 19.5 32.1 19.5H31.4C30.53 19.5 29.72 19.92 29.2 20.64L25.8 25.4C25.28 26.12 24.47 26.55 23.6 26.55H15.2C13.71 26.55 12.5 25.34 12.5 23.85Z"
+        className={isInverse ? "fill-white/78" : "fill-brand-secondary"}
       />
+
+      {/* Upper ribbon */}
       <path
-        d="M12 14C15 12 18.5 11 22 11C26.5 11 29.5 12.2 32 14.5"
-        stroke={isInverse ? "white" : "currentColor"}
-        className={isInverse ? "opacity-60" : "text-brand-accent"}
-        strokeWidth="2.5"
-        strokeLinecap="round"
+        d="M15.2 16.55C15.2 15.22 16.27 14.15 17.6 14.15H24.55C25.34 14.15 26.07 13.77 26.54 13.12L28.55 10.35C29.02 9.7 29.75 9.32 30.54 9.32H31.2C32.53 9.32 33.6 10.39 33.6 11.72C33.6 13.05 32.53 14.12 31.2 14.12H30.75C29.96 14.12 29.23 14.5 28.76 15.15L26.75 17.92C26.28 18.57 25.55 18.95 24.76 18.95H17.6C16.27 18.95 15.2 17.88 15.2 16.55Z"
+        className={isInverse ? "fill-white/55" : "fill-primary/75"}
       />
-      <circle
-        cx="34"
-        cy="14"
-        r="3"
-        className={isInverse ? "fill-brand-accent" : "fill-brand-accent"}
-      />
+
+      {/* Focus node — the zenith */}
+      <circle cx="33.15" cy="11.1" r="3.45" className="fill-brand-accent" />
     </svg>
   );
 }
@@ -79,8 +80,7 @@ export function TaskzenLogo({
   variant = "default",
 }: TaskzenLogoProps) {
   const config = sizeMap[size];
-  const wordClass =
-    variant === "inverse" ? "text-white" : "text-foreground";
+  const wordClass = variant === "inverse" ? "text-white" : "text-foreground";
 
   if (variant === "mark-only") {
     return (
@@ -95,7 +95,13 @@ export function TaskzenLogo({
       <LogoMark size={config.mark} variant={variant} />
       {showWordmark ? (
         <div className="min-w-0 leading-none">
-          <span className={cn("font-display font-semibold tracking-tight", config.word, wordClass)}>
+          <span
+            className={cn(
+              "font-display font-semibold tracking-tight",
+              config.word,
+              wordClass,
+            )}
+          >
             Taskzen
           </span>
         </div>
