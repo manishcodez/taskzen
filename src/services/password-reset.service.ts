@@ -73,10 +73,11 @@ export async function requestPasswordReset(emailInput: string): Promise<string> 
       expiresInMinutes: Math.round(PASSWORD_RESET_TOKEN_TTL_MS / 60000),
     });
   } catch (error) {
-    console.error("Failed to send password reset email.");
-    if (process.env.NODE_ENV !== "production") {
-      console.error(error instanceof Error ? error.message : "Unknown email error");
-    }
+    // Safe: provider errors include only HTTP status + Resend public message (emails redacted).
+    console.error(
+      "Failed to send password reset email.",
+      error instanceof Error ? error.message : "Unknown email error",
+    );
   }
 
   return FORGOT_PASSWORD_GENERIC_MESSAGE;
