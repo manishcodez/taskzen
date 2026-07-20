@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import { assertDbTestsAllowed } from "./lib/db-test-guard";
+
 import { hashPassword, verifyPassword } from "../src/lib/auth/password";
 import { toSafeUser } from "../src/lib/auth/session";
 import { db } from "../src/lib/db";
@@ -54,6 +56,8 @@ async function expectConflict(fn: () => Promise<unknown>, label: string) {
 }
 
 async function main() {
+  assertDbTestsAllowed("verify-phase6");
+
   const suffix = Date.now();
   const userA = await createTestUser(`phase6-a-${suffix}@example.com`);
   const userB = await createTestUser(`phase6-b-${suffix}@example.com`);

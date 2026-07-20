@@ -1,4 +1,6 @@
 import "dotenv/config";
+
+import { assertDbTestsAllowed } from "./lib/db-test-guard";
 import { config } from "dotenv";
 
 config({ path: ".env.local", override: true });
@@ -131,6 +133,10 @@ async function runServiceTests(suffix: number) {
     const settings = await getAdminSettingsInfo();
     scanForForbiddenContent(settings, "settings service");
     assert(settings.adminAccess.currentUserIsAdmin === true, "Settings must confirm admin context");
+    assert(
+      settings.analytics.excludesSyntheticTestAccounts === true,
+      "Settings must document synthetic account exclusion",
+    );
 
     await db.user.deleteMany({
       where: { email: { in: [adminEmail, userEmail] } },
@@ -212,6 +218,8 @@ async function runHttpTests() {
 }
 
 async function main() {
+  assertDbTestsAllowed("verify-admin");
+
   const suffix = Date.now();
 
   console.log("Admin verification: service-layer tests...");

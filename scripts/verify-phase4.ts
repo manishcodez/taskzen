@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import { assertDbTestsAllowed } from "./lib/db-test-guard";
+
 import { hashPassword } from "../src/lib/auth/password";
 import { db } from "../src/lib/db";
 import { getClientTimezoneOffset, toLocalDateKey } from "../src/lib/utils/date-ranges";
@@ -24,6 +26,8 @@ async function createTestUser(email: string) {
 }
 
 async function main() {
+  assertDbTestsAllowed("verify-phase4");
+
   const suffix = Date.now();
   const userA = await createTestUser(`phase4-a-${suffix}@example.com`);
   const userB = await createTestUser(`phase4-b-${suffix}@example.com`);

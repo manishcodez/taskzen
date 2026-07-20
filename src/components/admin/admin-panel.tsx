@@ -431,9 +431,15 @@ function SettingsSection() {
             <dt className="text-muted-foreground">Environment</dt>
             <dd className="font-medium capitalize">{data.application.environment}</dd>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
             <dt className="text-muted-foreground">Admin env configured</dt>
             <dd className="font-medium">{data.security.adminEnvConfigured ? "Yes" : "No"}</dd>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <dt className="text-muted-foreground">Analytics scope</dt>
+            <dd className="max-w-[16rem] text-right font-medium">
+              Genuine usage only (excludes @{data.analytics.syntheticEmailDomain} test accounts)
+            </dd>
           </div>
         </dl>
       </div>

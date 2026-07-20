@@ -1,7 +1,16 @@
 /**
  * HTTP smoke tests against the running Taskzen dev server.
- * Run while `npm run dev` is active: npx tsx scripts/e2e-smoke-http.ts
+ * Run while `npm run dev` is active:
+ *   TASKZEN_ALLOW_DB_TESTS=1 npx tsx scripts/e2e-smoke-http.ts
  */
+
+import "dotenv/config";
+import { config } from "dotenv";
+
+config({ path: ".env.local", override: true });
+
+import { assertDbTestsAllowed } from "./lib/db-test-guard";
+import { db } from "../src/lib/db";
 
 const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
 
@@ -26,6 +35,8 @@ async function fetchStatus(path: string, init?: RequestInit) {
 }
 
 async function main() {
+  assertDbTestsAllowed("e2e-smoke-http");
+
   const publicRoutes = ["/", "/login", "/register"];
 
   for (const route of publicRoutes) {
@@ -37,7 +48,14 @@ async function main() {
     }
   }
 
-  const protectedRoutes = ["/dashboard", "/tasks", "/subjects", "/calendar", "/analytics", "/settings"];
+  const protectedRoutes = [
+    "/dashboard",
+    "/tasks",
+    "/subjects",
+    "/calendar",
+    "/analytics",
+    "/settings",
+  ];
 
   for (const route of protectedRoutes) {
     try {
@@ -49,13 +67,18 @@ async function main() {
         ok ? `redirect ${response.status}` : `expected redirect, got ${response.status}`,
       );
     } catch (error) {
-      record(`GET ${route} unauthenticated`, false, error instanceof Error ? error.message : "failed");
+      record(
+        `GET ${route} unauthenticated`,
+        false,
+        error instanceof Error ? error.message : "failed",
+      );
     }
   }
 
   const suffix = Date.now();
   const email = `smoke-${suffix}@example.com`;
   const password = "smoke-test-password-123";
+  let createdEmail: string | null = null;
 
   let cookieHeader = "";
 
@@ -69,6 +92,10 @@ async function main() {
     const registerBody = await registerResponse.json();
     const registerOk = registerResponse.ok && registerBody.user?.email === email;
     record("POST /api/auth/register", registerOk, registerOk ? "user created" : "register failed");
+
+    if (registerOk) {
+      createdEmail = email;
+    }
 
     const setCookie = registerResponse.headers.getSetCookie?.() ?? [];
     cookieHeader = setCookie.map((item) => item.split(";")[0]).join("; ");
@@ -109,7 +136,11 @@ async function main() {
         method: "POST",
         headers: { Cookie: cookieHeader },
       });
-      record("POST /api/auth/logout", logoutResponse.ok, logoutResponse.ok ? "logged out" : "logout failed");
+      record(
+        "POST /api/auth/logout",
+        logoutResponse.ok,
+        logoutResponse.ok ? "logged out" : "logout failed",
+      );
     } catch (error) {
       record("POST /api/auth/logout", false, error instanceof Error ? error.message : "failed");
     }
@@ -122,8 +153,16 @@ async function main() {
         `status ${meAfterLogout.status}`,
       );
     } catch (error) {
-      record("GET /api/auth/me after logout", false, error instanceof Error ? error.message : "failed");
+      record(
+        "GET /api/auth/me after logout",
+        false,
+        error instanceof Error ? error.message : "failed",
+      );
     }
+  }
+
+  if (createdEmail) {
+    await db.user.deleteMany({ where: { email: createdEmail } });
   }
 
   const failed = results.filter((item) => !item.ok);
@@ -137,7 +176,11 @@ async function main() {
   console.log(`Smoke tests passed: ${results.length}/${results.length}`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await db.$disconnect();
+  });

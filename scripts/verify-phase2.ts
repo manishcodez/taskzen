@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import { assertDbTestsAllowed } from "./lib/db-test-guard";
 import { hashPassword } from "../src/lib/auth/password";
 import { db } from "../src/lib/db";
 import {
@@ -43,74 +44,73 @@ async function expectConflict(fn: () => Promise<unknown>, label: string) {
 }
 
 async function main() {
+  assertDbTestsAllowed("verify-phase2");
+
   const suffix = Date.now();
   const userA = await createTestUser(`phase2-a-${suffix}@example.com`);
   const userB = await createTestUser(`phase2-b-${suffix}@example.com`);
+  const userIds = [userA.id, userB.id];
 
-  const subject = await createSubjectForUser(userA.id, {
-    name: "Operating Systems",
-    code: "CS301",
-    color: "#6366f1",
-    description: "Phase 2 verification subject",
-  });
+  try {
+    const subject = await createSubjectForUser(userA.id, {
+      name: "Operating Systems",
+      code: "CS301",
+      color: "#6366f1",
+      description: "Phase 2 verification subject",
+    });
 
-  await expectNotFound(
-    () => getSubjectForUser(userB.id, subject.id),
-    "Cross-user subject access",
-  );
+    await expectNotFound(
+      () => getSubjectForUser(userB.id, subject.id),
+      "Cross-user subject access",
+    );
 
-  const updatedProfile = await updateProfileForUser(userA.id, {
-    course: "Computer Science",
-    college: "Taskzen University",
-    semester: "5",
-    academicYear: "2025-2026",
-    profilePhotoUrl: "https://example.com/avatar.png",
-  });
+    const updatedProfile = await updateProfileForUser(userA.id, {
+      course: "Computer Science",
+      college: "Taskzen University",
+      semester: "5",
+      academicYear: "2025-2026",
+      profilePhotoUrl: "https://example.com/avatar.png",
+    });
 
-  if (updatedProfile.course !== "Computer Science") {
-    throw new Error("Profile update failed");
+    if (updatedProfile.course !== "Computer Science") {
+      throw new Error("Profile update failed");
+    }
+
+    const taskSubject = await db.subject.create({
+      data: {
+        userId: userA.id,
+        name: "Database Management",
+        color: "#22c55e",
+      },
+    });
+
+    await db.task.create({
+      data: {
+        userId: userA.id,
+        subjectId: taskSubject.id,
+        title: "Phase 2 blocking task",
+        type: "ASSIGNMENT",
+        priority: "HIGH",
+        status: "NOT_STARTED",
+      },
+    });
+
+    await expectConflict(
+      () => deleteSubjectForUser(userA.id, taskSubject.id),
+      "Delete subject with tasks",
+    );
+
+    await deleteSubjectForUser(userA.id, subject.id);
+
+    console.log("Phase 2 verification passed:");
+    console.log("- Subject ownership isolation returns 404");
+    console.log("- Subject deletion blocked when tasks exist returns 409");
+    console.log("- Profile updates persist correctly");
+  } finally {
+    await db.task.deleteMany({ where: { userId: { in: userIds } } });
+    await db.subject.deleteMany({ where: { userId: { in: userIds } } });
+    await db.user.deleteMany({ where: { id: { in: userIds } } });
   }
-
-  const taskSubject = await db.subject.create({
-    data: {
-      userId: userA.id,
-      name: "Database Management",
-      color: "#22c55e",
-    },
-  });
-
-  await db.task.create({
-    data: {
-      userId: userA.id,
-      subjectId: taskSubject.id,
-      title: "Phase 2 blocking task",
-      type: "ASSIGNMENT",
-      priority: "HIGH",
-      status: "NOT_STARTED",
-    },
-  });
-
-  await expectConflict(
-    () => deleteSubjectForUser(userA.id, taskSubject.id),
-    "Delete subject with tasks",
-  );
-
-  await deleteSubjectForUser(userA.id, subject.id);
-
-  await db.task.deleteMany({
-    where: { userId: userA.id },
-  });
-  await db.subject.deleteMany({
-    where: { userId: { in: [userA.id, userB.id] } },
-  });
-  await db.user.deleteMany({
-    where: { id: { in: [userA.id, userB.id] } },
-  });
-
-  console.log("Phase 2 verification passed:");
-  console.log("- Subject ownership isolation returns 404");
-  console.log("- Subject deletion blocked when tasks exist returns 409");
-  console.log("- Profile updates persist correctly");
 }
 
 main()

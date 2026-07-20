@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import { assertDbTestsAllowed } from "./lib/db-test-guard";
+
 import { TaskStatus } from "../src/generated/prisma/client";
 import { hashPassword } from "../src/lib/auth/password";
 import { db } from "../src/lib/db";
@@ -22,13 +24,17 @@ async function createTestUser(email: string) {
 }
 
 async function main() {
+  assertDbTestsAllowed("verify-phase5");
+
   const suffix = Date.now();
   const userA = await createTestUser(`phase5-a-${suffix}@example.com`);
   const userB = await createTestUser(`phase5-b-${suffix}@example.com`);
+  const userIds = [userA.id, userB.id];
   const tzOffset = getClientTimezoneOffset();
   const now = new Date();
   const { start: weekStart } = getThisWeekRangeUtc(tzOffset);
 
+  try {
   const inWeekCompletion = (hoursAgo: number) =>
     new Date(Math.max(weekStart.getTime(), now.getTime() - hoursAgo * 60 * 60 * 1000));
 
@@ -145,21 +151,16 @@ async function main() {
     throw new Error("Analytics data isolation failed for user B");
   }
 
-  await db.task.deleteMany({
-    where: { userId: { in: [userA.id, userB.id] } },
-  });
-  await db.subject.deleteMany({
-    where: { userId: { in: [userA.id, userB.id] } },
-  });
-  await db.user.deleteMany({
-    where: { id: { in: [userA.id, userB.id] } },
-  });
-
   console.log("Phase 5 verification passed:");
   console.log("- Analytics summary calculations are correct");
   console.log("- Weekly trend and subject workload are populated");
   console.log("- Productivity streak and most productive day are calculated");
   console.log("- Analytics data is isolated per user");
+  } finally {
+    await db.task.deleteMany({ where: { userId: { in: userIds } } });
+    await db.subject.deleteMany({ where: { userId: { in: userIds } } });
+    await db.user.deleteMany({ where: { id: { in: userIds } } });
+  }
 }
 
 main()

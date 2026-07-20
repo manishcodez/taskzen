@@ -1,5 +1,9 @@
 import { TaskStatus } from "@/generated/prisma/client";
 import { getAdminUserEmail } from "@/lib/auth/admin-config";
+import {
+  genuineUserWhere,
+  ownedByGenuineUserWhere,
+} from "@/lib/analytics/genuine-usage";
 import { db } from "@/lib/db";
 
 const ACTIVE_USER_WINDOW_DAYS = 30;
@@ -96,6 +100,10 @@ export type AdminSettingsInfo = {
     environment: string;
     name: string;
   };
+  analytics: {
+    excludesSyntheticTestAccounts: true;
+    syntheticEmailDomain: "example.com";
+  };
 };
 
 function startOfUtcDay(date: Date): string {
@@ -181,11 +189,17 @@ async function getActiveUserCount(): Promise<number> {
 
   const [profileActiveUsers, taskActiveUsers] = await Promise.all([
     db.user.findMany({
-      where: { updatedAt: { gte: activeSince } },
+      where: {
+        ...genuineUserWhere,
+        updatedAt: { gte: activeSince },
+      },
       select: { id: true },
     }),
     db.task.findMany({
-      where: { updatedAt: { gte: activeSince } },
+      where: {
+        ...ownedByGenuineUserWhere,
+        updatedAt: { gte: activeSince },
+      },
       select: { userId: true },
       distinct: ["userId"],
     }),
@@ -209,12 +223,22 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
     totalTasks,
     completedTasks,
   ] = await Promise.all([
-    db.user.count(),
+    db.user.count({ where: genuineUserWhere }),
     getActiveUserCount(),
-    db.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-    db.subject.count(),
-    db.task.count(),
-    db.task.count({ where: { status: TaskStatus.COMPLETED } }),
+    db.user.count({
+      where: {
+        ...genuineUserWhere,
+        createdAt: { gte: sevenDaysAgo },
+      },
+    }),
+    db.subject.count({ where: ownedByGenuineUserWhere }),
+    db.task.count({ where: ownedByGenuineUserWhere }),
+    db.task.count({
+      where: {
+        ...ownedByGenuineUserWhere,
+        status: TaskStatus.COMPLETED,
+      },
+    }),
   ]);
 
   const pendingTasks = totalTasks - completedTasks;
@@ -238,13 +262,26 @@ export async function getAdminUserAnalytics(): Promise<AdminUserAnalytics> {
 
   const [totalUsers, activeUsers, newUsersLast7Days, newUsersLast30Days, userDates] =
     await Promise.all([
-      db.user.count(),
+      db.user.count({ where: genuineUserWhere }),
       getActiveUserCount(),
-      db.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-      db.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+      db.user.count({
+        where: {
+          ...genuineUserWhere,
+          createdAt: { gte: sevenDaysAgo },
+        },
+      }),
+      db.user.count({
+        where: {
+          ...genuineUserWhere,
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      }),
       db.user.findMany({
         select: { createdAt: true },
-        where: { createdAt: { gte: thirtyDaysAgo } },
+        where: {
+          ...genuineUserWhere,
+          createdAt: { gte: thirtyDaysAgo },
+        },
       }),
     ]);
 
@@ -268,29 +305,39 @@ export async function getAdminProductAnalytics(): Promise<AdminProductAnalytics>
   const [createdTasks, completedTasks, createdSubjects, statusGroups, taskUsers, subjectUsers] =
     await Promise.all([
       db.task.findMany({
-        where: { createdAt: { gte: thirtyDaysAgo } },
+        where: {
+          ...ownedByGenuineUserWhere,
+          createdAt: { gte: thirtyDaysAgo },
+        },
         select: { createdAt: true },
       }),
       db.task.findMany({
         where: {
+          ...ownedByGenuineUserWhere,
           completedAt: { gte: thirtyDaysAgo },
           status: TaskStatus.COMPLETED,
         },
         select: { completedAt: true },
       }),
       db.subject.findMany({
-        where: { createdAt: { gte: thirtyDaysAgo } },
+        where: {
+          ...ownedByGenuineUserWhere,
+          createdAt: { gte: thirtyDaysAgo },
+        },
         select: { createdAt: true },
       }),
       db.task.groupBy({
         by: ["status"],
+        where: ownedByGenuineUserWhere,
         _count: { _all: true },
       }),
       db.task.findMany({
+        where: ownedByGenuineUserWhere,
         select: { userId: true },
         distinct: ["userId"],
       }),
       db.subject.findMany({
+        where: ownedByGenuineUserWhere,
         select: { userId: true },
         distinct: ["userId"],
       }),
@@ -304,12 +351,18 @@ export async function getAdminProductAnalytics(): Promise<AdminProductAnalytics>
 
   const [completedTaskUsers, scheduledTaskUsers] = await Promise.all([
     db.task.findMany({
-      where: { status: TaskStatus.COMPLETED },
+      where: {
+        ...ownedByGenuineUserWhere,
+        status: TaskStatus.COMPLETED,
+      },
       select: { userId: true },
       distinct: ["userId"],
     }),
     db.task.findMany({
-      where: { dueDate: { not: null } },
+      where: {
+        ...ownedByGenuineUserWhere,
+        dueDate: { not: null },
+      },
       select: { userId: true },
       distinct: ["userId"],
     }),
@@ -369,22 +422,32 @@ export async function getAdminActivityStats(): Promise<AdminActivityStats> {
 
   const [registrations, taskCreations, taskCompletions, subjectCreations] = await Promise.all([
     db.user.findMany({
-      where: { createdAt: { gte: thirtyDaysAgo } },
-      select: { createdAt: true },
-    }),
-    db.task.findMany({
-      where: { createdAt: { gte: thirtyDaysAgo } },
+      where: {
+        ...genuineUserWhere,
+        createdAt: { gte: thirtyDaysAgo },
+      },
       select: { createdAt: true },
     }),
     db.task.findMany({
       where: {
+        ...ownedByGenuineUserWhere,
+        createdAt: { gte: thirtyDaysAgo },
+      },
+      select: { createdAt: true },
+    }),
+    db.task.findMany({
+      where: {
+        ...ownedByGenuineUserWhere,
         completedAt: { gte: thirtyDaysAgo },
         status: TaskStatus.COMPLETED,
       },
       select: { completedAt: true },
     }),
     db.subject.findMany({
-      where: { createdAt: { gte: thirtyDaysAgo } },
+      where: {
+        ...ownedByGenuineUserWhere,
+        createdAt: { gte: thirtyDaysAgo },
+      },
       select: { createdAt: true },
     }),
   ]);
@@ -429,6 +492,10 @@ export async function getAdminSettingsInfo(): Promise<AdminSettingsInfo> {
       version: getAppVersion(),
       environment: getSafeEnvironment(),
       name: "Taskzen",
+    },
+    analytics: {
+      excludesSyntheticTestAccounts: true,
+      syntheticEmailDomain: "example.com",
     },
   };
 }

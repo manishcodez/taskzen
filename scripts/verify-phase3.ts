@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import { assertDbTestsAllowed } from "./lib/db-test-guard";
+
 import { hashPassword } from "../src/lib/auth/password";
 import { db } from "../src/lib/db";
 import { AppError } from "../src/lib/api-response";
@@ -36,6 +38,8 @@ async function expectNotFound(fn: () => Promise<unknown>, label: string) {
 }
 
 async function main() {
+  assertDbTestsAllowed("verify-phase3");
+
   const suffix = Date.now();
   const userA = await createTestUser(`phase3-a-${suffix}@example.com`);
   const userB = await createTestUser(`phase3-b-${suffix}@example.com`);
