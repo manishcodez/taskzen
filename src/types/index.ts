@@ -168,3 +168,13 @@ export type ApiErrorResponse = {
     fields?: Record<string, string[]>;
   };
 };
+
+export type {
+  AdminActivityStats,
+  AdminOverviewStats,
+  AdminProductAnalytics,
+  AdminSettingsInfo,
+  AdminSystemHealth,
+  AdminTrendPoint,
+  AdminUserAnalytics,
+} from "@/services/admin.service";

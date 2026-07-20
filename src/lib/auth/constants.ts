@@ -20,7 +20,10 @@ export const PROTECTED_ROUTE_PREFIXES = [
   "/calendar",
   "/analytics",
   "/settings",
+  "/admin",
 ] as const;
+
+export const ADMIN_API_PREFIX = "/api/admin" as const;
 
 export const PUBLIC_API_ROUTES = [
   "/api/auth/register",
@@ -39,6 +42,7 @@ export type SafeUser = {
   academicYear: string | null;
   createdAt: Date;
   updatedAt: Date;
+  isAdmin: boolean;
 };
 
 export type TokenPayload = {

@@ -9,6 +9,7 @@ import {
   type SafeUser,
   type TokenPayload,
 } from "@/lib/auth/constants";
+import { withAdminFlag } from "@/lib/auth/admin";
 import { signAccessToken, signRefreshToken, verifyAccessToken } from "@/lib/auth/jwt";
 import { db } from "@/lib/db";
 
@@ -31,7 +32,7 @@ export function toSafeUser(user: {
   createdAt: Date;
   updatedAt: Date;
 }): SafeUser {
-  return {
+  return withAdminFlag({
     id: user.id,
     email: user.email,
     name: user.name,
@@ -42,7 +43,7 @@ export function toSafeUser(user: {
     academicYear: user.academicYear,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-  };
+  });
 }
 
 export function setAuthCookies(response: NextResponse, payload: TokenPayload): void {

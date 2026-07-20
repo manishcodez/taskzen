@@ -1,5 +1,11 @@
 import type { SafeUser } from "@/lib/auth/constants";
 import type {
+  AdminActivityStats,
+  AdminOverviewStats,
+  AdminProductAnalytics,
+  AdminSettingsInfo,
+  AdminSystemHealth,
+  AdminUserAnalytics,
   AnalyticsData,
   ApiErrorResponse,
   CalendarData,
@@ -413,6 +419,40 @@ export async function logoutRequest(): Promise<void> {
   });
 }
 
+async function fetchAdminResource<T>(path: string, key: keyof T): Promise<T[typeof key]> {
+  const response = await fetch(path, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const data = await parseApiResponse<T>(response);
+  return data[key];
+}
+
+export async function fetchAdminOverview(): Promise<AdminOverviewStats> {
+  return fetchAdminResource<{ overview: AdminOverviewStats }>("/api/admin/overview", "overview");
+}
+
+export async function fetchAdminUsers(): Promise<AdminUserAnalytics> {
+  return fetchAdminResource<{ users: AdminUserAnalytics }>("/api/admin/users", "users");
+}
+
+export async function fetchAdminProduct(): Promise<AdminProductAnalytics> {
+  return fetchAdminResource<{ product: AdminProductAnalytics }>("/api/admin/product", "product");
+}
+
+export async function fetchAdminHealth(): Promise<AdminSystemHealth> {
+  return fetchAdminResource<{ health: AdminSystemHealth }>("/api/admin/health", "health");
+}
+
+export async function fetchAdminActivity(): Promise<AdminActivityStats> {
+  return fetchAdminResource<{ activity: AdminActivityStats }>("/api/admin/activity", "activity");
+}
+
+export async function fetchAdminSettings(): Promise<AdminSettingsInfo> {
+  return fetchAdminResource<{ settings: AdminSettingsInfo }>("/api/admin/settings", "settings");
+}
+
 export const queryKeys = {
   auth: {
     me: ["auth", "me"] as const,
@@ -441,5 +481,14 @@ export const queryKeys = {
   analytics: {
     all: ["analytics"] as const,
     current: (tzOffset?: number) => ["analytics", "current", tzOffset ?? "local"] as const,
+  },
+  admin: {
+    all: ["admin"] as const,
+    overview: ["admin", "overview"] as const,
+    users: ["admin", "users"] as const,
+    product: ["admin", "product"] as const,
+    health: ["admin", "health"] as const,
+    activity: ["admin", "activity"] as const,
+    settings: ["admin", "settings"] as const,
   },
 };

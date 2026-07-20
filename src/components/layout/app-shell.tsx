@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -26,7 +27,7 @@ import { motionTransition } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { SafeUser } from "@/lib/auth/constants";
 
-const navItems = [
+const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", shortLabel: "Dash", icon: LayoutDashboard },
   { href: "/tasks", label: "Tasks", shortLabel: "Tasks", icon: CheckSquare },
   { href: "/subjects", label: "Subjects", shortLabel: "Subjects", icon: BookOpen },
@@ -35,13 +36,25 @@ const navItems = [
   { href: "/settings", label: "Settings", shortLabel: "Settings", icon: Settings },
 ] as const;
 
+const adminNavItem = {
+  href: "/admin",
+  label: "Admin",
+  shortLabel: "Admin",
+  icon: Shield,
+} as const;
+
+function getNavItems(isAdmin: boolean) {
+  return isAdmin ? [...baseNavItems, adminNavItem] : baseNavItems;
+}
+
 type AppShellProps = {
   user: SafeUser;
   children: React.ReactNode;
 };
 
-function DesktopRail({ pathname }: { pathname: string }) {
+function DesktopRail({ pathname, isAdmin }: { pathname: string; isAdmin: boolean }) {
   const prefersReducedMotion = useReducedMotion();
+  const navItems = getNavItems(isAdmin);
 
   return (
     <aside className="fixed top-1/2 left-3 z-40 hidden -translate-y-1/2 md:block lg:left-4">
@@ -99,10 +112,17 @@ function DesktopRail({ pathname }: { pathname: string }) {
   );
 }
 
-function MobileTabBar({ pathname }: { pathname: string }) {
+function MobileTabBar({ pathname, isAdmin }: { pathname: string; isAdmin: boolean }) {
+  const navItems = getNavItems(isAdmin);
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-card/95 px-1 py-1.5 shadow-float backdrop-blur-md md:hidden">
-      <div className="mx-auto grid max-w-lg grid-cols-6 gap-0.5">
+      <div
+        className={cn(
+          "mx-auto grid max-w-lg gap-0.5",
+          isAdmin ? "grid-cols-7" : "grid-cols-6",
+        )}
+      >
         {navItems.map(({ href, label, shortLabel, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
@@ -143,6 +163,7 @@ export function AppShell({ user, children }: AppShellProps) {
   const { data: liveUser } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const displayUser = liveUser ?? user;
+  const isAdmin = displayUser.isAdmin;
 
   async function handleLogout() {
     try {
@@ -157,8 +178,8 @@ export function AppShell({ user, children }: AppShellProps) {
 
   return (
     <div className="min-h-screen overflow-x-clip bg-atelier">
-      <DesktopRail pathname={pathname} />
-      <MobileTabBar pathname={pathname} />
+      <DesktopRail pathname={pathname} isAdmin={isAdmin} />
+      <MobileTabBar pathname={pathname} isAdmin={isAdmin} />
 
       <div className="mx-auto min-h-screen max-w-[1400px] md:pl-[6.75rem] lg:pl-[7.25rem]">
         <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-md">

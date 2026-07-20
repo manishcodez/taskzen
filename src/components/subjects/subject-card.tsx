@@ -33,24 +33,26 @@ export function SubjectCard({ subject }: SubjectCardProps) {
           }}
         />
         <div className="space-y-3 p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-3">
+          <div className="flex w-full min-w-0 items-start justify-between gap-2 max-sm:flex-wrap max-sm:gap-y-2 sm:gap-3">
+            <div className="flex min-w-0 flex-1 items-start gap-3 overflow-hidden">
               <span
                 className="mt-0.5 h-4 w-4 shrink-0 rounded-full shadow-soft ring-2 ring-background"
                 style={{ backgroundColor: subject.color }}
               />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-display truncate text-lg font-semibold tracking-tight transition-colors group-hover:text-primary">
                   {subject.name}
                 </h3>
                 {subject.code ? (
-                  <p className="label-caps mt-1 normal-case tracking-[0.1em]">{subject.code}</p>
+                  <p className="label-caps mt-1 truncate normal-case tracking-[0.1em]">
+                    {subject.code}
+                  </p>
                 ) : null}
               </div>
             </div>
             <Badge
               variant="secondary"
-              className="shrink-0 bg-primary/10 text-primary shadow-soft"
+              className="shrink-0 self-start bg-primary/10 text-primary shadow-soft"
             >
               {subject.taskCount} tasks
             </Badge>
