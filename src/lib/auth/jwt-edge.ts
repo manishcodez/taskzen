@@ -46,17 +46,29 @@ function readCookie(request: Request, cookieName: string): string | null {
   return null;
 }
 
+function parseTokenPayload(payload: Record<string, unknown>): TokenPayload | null {
+  const sub = payload.sub;
+  const email = payload.email;
+  const tokenVersion = payload.tokenVersion;
+
+  if (typeof sub !== "string" || typeof email !== "string") {
+    return null;
+  }
+
+  const version =
+    typeof tokenVersion === "number" && Number.isFinite(tokenVersion)
+      ? tokenVersion
+      : typeof tokenVersion === "string" && /^\d+$/.test(tokenVersion)
+        ? Number(tokenVersion)
+        : 0;
+
+  return { sub, email, tokenVersion: version };
+}
+
 export async function verifyAccessTokenEdge(token: string): Promise<TokenPayload | null> {
   try {
     const { payload } = await jwtVerify(token, getJwtSecretKey());
-    const sub = payload.sub;
-    const email = payload.email;
-
-    if (typeof sub !== "string" || typeof email !== "string") {
-      return null;
-    }
-
-    return { sub, email };
+    return parseTokenPayload(payload as Record<string, unknown>);
   } catch {
     return null;
   }
@@ -65,21 +77,17 @@ export async function verifyAccessTokenEdge(token: string): Promise<TokenPayload
 export async function verifyRefreshTokenEdge(token: string): Promise<TokenPayload | null> {
   try {
     const { payload } = await jwtVerify(token, getJwtRefreshSecretKey());
-    const sub = payload.sub;
-    const email = payload.email;
-
-    if (typeof sub !== "string" || typeof email !== "string") {
-      return null;
-    }
-
-    return { sub, email };
+    return parseTokenPayload(payload as Record<string, unknown>);
   } catch {
     return null;
   }
 }
 
 export async function signAccessTokenEdge(payload: TokenPayload): Promise<string> {
-  return new SignJWT({ email: payload.email })
+  return new SignJWT({
+    email: payload.email,
+    tokenVersion: payload.tokenVersion,
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()

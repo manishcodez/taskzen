@@ -56,10 +56,15 @@ export async function POST() {
         academicYear: true,
         createdAt: true,
         updatedAt: true,
+        tokenVersion: true,
       },
     });
 
-    if (!user || user.email.toLowerCase() !== payload.email.toLowerCase()) {
+    if (
+      !user ||
+      user.email.toLowerCase() !== payload.email.toLowerCase() ||
+      user.tokenVersion !== payload.tokenVersion
+    ) {
       const response = NextResponse.json(
         {
           error: {
@@ -77,6 +82,7 @@ export async function POST() {
     setAuthCookies(response, {
       sub: user.id,
       email: user.email,
+      tokenVersion: user.tokenVersion,
     });
     return response;
   } catch (error) {

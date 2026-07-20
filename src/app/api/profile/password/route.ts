@@ -1,6 +1,7 @@
 import { AppError, apiSuccess, handleApiError } from "@/lib/api-response";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { setAuthCookies } from "@/lib/auth/session";
 import { changePasswordSchema } from "@/lib/validators/auth";
 import { db } from "@/lib/db";
 import { updatePasswordForUser } from "@/services/subject.service";
@@ -13,7 +14,7 @@ export async function PATCH(request: Request) {
 
     const account = await db.user.findUnique({
       where: { id: user.id },
-      select: { passwordHash: true },
+      select: { passwordHash: true, email: true, tokenVersion: true },
     });
 
     if (!account) {
@@ -31,7 +32,18 @@ export async function PATCH(request: Request) {
     const passwordHash = await hashPassword(data.newPassword);
     await updatePasswordForUser(user.id, passwordHash);
 
-    return apiSuccess({ success: true });
+    const updated = await db.user.findUnique({
+      where: { id: user.id },
+      select: { tokenVersion: true },
+    });
+
+    const response = apiSuccess({ success: true });
+    setAuthCookies(response, {
+      sub: user.id,
+      email: account.email,
+      tokenVersion: updated?.tokenVersion ?? account.tokenVersion + 1,
+    });
+    return response;
   } catch (error) {
     return handleApiError(error);
   }

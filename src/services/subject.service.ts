@@ -250,6 +250,9 @@ export async function updateProfileForUser(
 export async function updatePasswordForUser(userId: string, passwordHash: string) {
   await db.user.update({
     where: { id: userId },
-    data: { passwordHash },
+    data: {
+      passwordHash,
+      tokenVersion: { increment: 1 },
+    },
   });
 }

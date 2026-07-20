@@ -86,8 +86,12 @@ async function createPrivateContent(userId: string) {
   });
 }
 
-function sessionCookieForUser(user: { id: string; email: string }): string {
-  const token = signAccessToken({ sub: user.id, email: user.email });
+function sessionCookieForUser(user: { id: string; email: string; tokenVersion: number }): string {
+  const token = signAccessToken({
+    sub: user.id,
+    email: user.email,
+    tokenVersion: user.tokenVersion,
+  });
   return `${AUTH_COOKIE_ACCESS}=${encodeURIComponent(token)}`;
 }
 

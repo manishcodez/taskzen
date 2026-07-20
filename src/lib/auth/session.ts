@@ -25,6 +25,20 @@ const cookieBaseOptions = {
   path: "/",
 };
 
+const userAuthSelect = {
+  id: true,
+  email: true,
+  name: true,
+  profilePhotoUrl: true,
+  course: true,
+  college: true,
+  semester: true,
+  academicYear: true,
+  createdAt: true,
+  updatedAt: true,
+  tokenVersion: true,
+} as const;
+
 export function toSafeUser(user: {
   id: string;
   email: string;
@@ -108,6 +122,16 @@ export async function clearAuthCookiesOnStore(): Promise<void> {
   });
 }
 
+function isSessionPayloadValid(
+  payload: TokenPayload,
+  user: { email: string; tokenVersion: number },
+): boolean {
+  return (
+    user.email.toLowerCase() === payload.email.toLowerCase() &&
+    user.tokenVersion === payload.tokenVersion
+  );
+}
+
 export async function getCurrentUser(): Promise<SafeUser | null> {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(AUTH_COOKIE_ACCESS)?.value;
@@ -117,21 +141,12 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
       const payload = verifyAccessToken(accessToken);
       const user = await db.user.findUnique({
         where: { id: payload.sub },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          profilePhotoUrl: true,
-          course: true,
-          college: true,
-          semester: true,
-          academicYear: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: userAuthSelect,
       });
 
-      return user ? toSafeUser(user) : null;
+      if (user && isSessionPayloadValid(payload, user)) {
+        return toSafeUser(user);
+      }
     } catch {
       // Fall through to refresh-token recovery.
     }
@@ -146,25 +161,18 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
     const payload = verifyRefreshToken(refreshToken);
     const user = await db.user.findUnique({
       where: { id: payload.sub },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        profilePhotoUrl: true,
-        course: true,
-        college: true,
-        semester: true,
-        academicYear: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: userAuthSelect,
     });
 
-    if (!user || user.email.toLowerCase() !== payload.email.toLowerCase()) {
+    if (!user || !isSessionPayloadValid(payload, user)) {
       return null;
     }
 
-    await setAuthCookiesOnStore({ sub: user.id, email: user.email });
+    await setAuthCookiesOnStore({
+      sub: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+    });
     return toSafeUser(user);
   } catch {
     return null;

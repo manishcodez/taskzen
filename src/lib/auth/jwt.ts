@@ -26,22 +26,55 @@ function getJwtRefreshSecret(): string {
   return secret;
 }
 
+function toTokenPayload(decoded: string | jwt.JwtPayload): TokenPayload {
+  if (!decoded || typeof decoded === "string") {
+    throw new Error("Invalid token payload");
+  }
+
+  const sub = decoded.sub;
+  const email = decoded.email;
+  const tokenVersion = decoded.tokenVersion;
+
+  if (typeof sub !== "string" || typeof email !== "string") {
+    throw new Error("Invalid token payload");
+  }
+
+  const version =
+    typeof tokenVersion === "number" && Number.isFinite(tokenVersion)
+      ? tokenVersion
+      : typeof tokenVersion === "string" && /^\d+$/.test(tokenVersion)
+        ? Number(tokenVersion)
+        : 0;
+
+  return { sub, email, tokenVersion: version };
+}
+
 export function signAccessToken(payload: TokenPayload): string {
-  return jwt.sign(payload, getJwtSecret(), {
-    expiresIn: ACCESS_TOKEN_EXPIRES_IN,
-  });
+  return jwt.sign(
+    { email: payload.email, tokenVersion: payload.tokenVersion },
+    getJwtSecret(),
+    {
+      subject: payload.sub,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+    },
+  );
 }
 
 export function signRefreshToken(payload: TokenPayload): string {
-  return jwt.sign(payload, getJwtRefreshSecret(), {
-    expiresIn: REFRESH_TOKEN_EXPIRES_IN,
-  });
+  return jwt.sign(
+    { email: payload.email, tokenVersion: payload.tokenVersion },
+    getJwtRefreshSecret(),
+    {
+      subject: payload.sub,
+      expiresIn: REFRESH_TOKEN_EXPIRES_IN,
+    },
+  );
 }
 
 export function verifyAccessToken(token: string): TokenPayload {
-  return jwt.verify(token, getJwtSecret()) as TokenPayload;
+  return toTokenPayload(jwt.verify(token, getJwtSecret()));
 }
 
 export function verifyRefreshToken(token: string): TokenPayload {
-  return jwt.verify(token, getJwtRefreshSecret()) as TokenPayload;
+  return toTokenPayload(jwt.verify(token, getJwtRefreshSecret()));
 }

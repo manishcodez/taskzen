@@ -57,6 +57,7 @@ export async function POST(request: Request) {
     setAuthCookies(response, {
       sub: user.id,
       email: user.email,
+      tokenVersion: user.tokenVersion,
     });
 
     return response;

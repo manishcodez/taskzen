@@ -419,6 +419,34 @@ export async function logoutRequest(): Promise<void> {
   });
 }
 
+export async function forgotPasswordRequest(input: { email: string }): Promise<string> {
+  const response = await fetch("/api/auth/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+
+  const data = await parseApiResponse<{ message: string }>(response);
+  return data.message;
+}
+
+export async function resetPasswordRequest(input: {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<string> {
+  const response = await fetch("/api/auth/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+
+  const data = await parseApiResponse<{ message: string }>(response);
+  return data.message;
+}
+
 async function fetchAdminResource<T>(path: string, key: keyof T): Promise<T[typeof key]> {
   const response = await fetch(path, {
     method: "GET",
