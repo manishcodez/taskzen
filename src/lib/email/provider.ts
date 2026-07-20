@@ -45,7 +45,12 @@ function readEnv(name: string): string | undefined {
 }
 
 function normalizeResendApiKey(apiKey: string): string {
-  return apiKey.replace(/^Bearer\s+/i, "").trim();
+  // HTTP header values must be ByteString (Latin-1). Copied keys sometimes include
+  // Unicode ellipsis U+2026 (…) or other non-ASCII from truncated UI paste.
+  return apiKey
+    .replace(/^Bearer\s+/i, "")
+    .trim()
+    .replace(/[^\x21-\x7E]/g, "");
 }
 
 /**
@@ -53,7 +58,8 @@ function normalizeResendApiKey(apiKey: string): string {
  * Prefer a display name for the shared onboarding sender.
  */
 function normalizeEmailFrom(from: string): string {
-  const trimmed = from.trim();
+  // Keep ASCII-only for safety; strip accidental rich-text punctuation.
+  const trimmed = from.trim().replace(/[^\x20-\x7E]/g, "");
   if (trimmed.includes("<") && trimmed.includes(">")) {
     return trimmed;
   }
