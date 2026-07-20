@@ -40,7 +40,8 @@ enum EmailNotificationType {
 model User {
   id                         String   @id @default(uuid()) @db.Uuid
   email                      String   @unique @db.VarChar(255)
-  passwordHash               String   @map("password_hash") @db.VarChar(255)
+  /// Null for Google-only accounts that have never set a password.
+  passwordHash               String?  @map("password_hash") @db.VarChar(255)
   /// Bumped on password change/reset to invalidate existing JWTs.
   tokenVersion               Int      @default(0) @map("token_version")
   name                       String?  @db.VarChar(100)
@@ -54,12 +55,29 @@ model User {
   createdAt                  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  subjects                 Subject[]
-  tasks                    Task[]
-  passwordResetTokens      PasswordResetToken[]
+  subjects                    Subject[]
+  tasks                       Task[]
+  passwordResetTokens         PasswordResetToken[]
   emailNotificationDeliveries EmailNotificationDelivery[]
+  oauthAccounts               OAuthAccount[]
 
   @@map("users")
+}
+
+model OAuthAccount {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  provider          String   @db.VarChar(32)
+  providerAccountId String   @map("provider_account_id") @db.VarChar(255)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("oauth_accounts")
 }
 
 model PasswordResetToken {

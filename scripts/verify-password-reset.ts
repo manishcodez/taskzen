@@ -133,6 +133,9 @@ async function main() {
     if (!updated) {
       throw new Error("User missing after reset");
     }
+    if (!updated.passwordHash) {
+      throw new Error("Password hash missing after reset");
+    }
     if (!(await verifyPassword(newPassword, updated.passwordHash))) {
       throw new Error("New password should verify");
     }

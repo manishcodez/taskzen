@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { AuthMethodDivider, GoogleContinueButton } from "@/components/auth/google-continue-button";
 import { TaskzenLogo } from "@/components/brand/taskzen-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,6 +155,8 @@ export function RegisterForm() {
             <Button type="submit" className="w-full shadow-soft" size="lg" disabled={isSubmitting}>
               {isSubmitting ? "Creating account..." : "Create account"}
             </Button>
+            <AuthMethodDivider />
+            <GoogleContinueButton disabled={isSubmitting} />
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link

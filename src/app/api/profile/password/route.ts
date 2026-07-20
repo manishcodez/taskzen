@@ -21,6 +21,15 @@ export async function PATCH(request: Request) {
       throw new AppError("NOT_FOUND", "Account not found.", 404);
     }
 
+    if (!account.passwordHash) {
+      throw new AppError(
+        "PASSWORD_NOT_SET",
+        "This account uses Google sign-in. Set a password via Forgot password first.",
+        400,
+        { currentPassword: ["No password is set for this account."] },
+      );
+    }
+
     const isValidPassword = await verifyPassword(data.currentPassword, account.passwordHash);
 
     if (!isValidPassword) {

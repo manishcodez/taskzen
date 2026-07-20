@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       where: { email: data.email.toLowerCase() },
     });
 
-    if (!user) {
+    if (!user?.passwordHash) {
       throw new AppError("INVALID_CREDENTIALS", "Invalid email or password", 401);
     }
 

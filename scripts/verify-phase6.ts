@@ -68,6 +68,9 @@ async function main() {
     throw new Error("Safe user must not expose password hash");
   }
 
+  if (!userA.passwordHash) {
+    throw new Error("Expected password hash on test user");
+  }
   const isValid = await verifyPassword("password123", userA.passwordHash);
   if (!isValid) {
     throw new Error("bcrypt password verification failed");

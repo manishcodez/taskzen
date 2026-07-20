@@ -46,6 +46,8 @@ export const PUBLIC_API_ROUTES = [
   "/api/auth/refresh",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
+  "/api/auth/google",
+  "/api/auth/google/callback",
   "/api/cron/task-notifications",
 ] as const;
 

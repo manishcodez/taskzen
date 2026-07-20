@@ -7,6 +7,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import {
+  AuthMethodDivider,
+  getGoogleAuthErrorMessage,
+  GoogleContinueButton,
+} from "@/components/auth/google-continue-button";
 import { TaskzenLogo } from "@/components/brand/taskzen-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +27,8 @@ export function LoginForm() {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [formError, setFormError] = useState<string | null>(null);
+  const oauthError = getGoogleAuthErrorMessage(searchParams.get("error"));
+  const [formError, setFormError] = useState<string | null>(oauthError);
 
   const {
     register,
@@ -144,6 +150,11 @@ export function LoginForm() {
             <Button type="submit" className="w-full shadow-soft" size="lg" disabled={isSubmitting}>
               {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
+            <AuthMethodDivider />
+            <GoogleContinueButton
+              redirectTo={searchParams.get("redirect")}
+              disabled={isSubmitting}
+            />
             <p className="text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
               <Link
